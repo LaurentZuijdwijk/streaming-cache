@@ -1,0 +1,19 @@
+{
+  "name": "streaming-cache",
+  "version": "0.0.1",
+  "description": "Cache and replay NodeJS streams",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cache",
+    "streams",
+    "queue"
+  ],
+  "author": "Laurent Zuijdwijk",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "memory-cache": "~0.1.4"
+  }
+}
