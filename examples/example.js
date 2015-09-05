@@ -1,6 +1,6 @@
 'use strict';
 
-var Cache = require('./index.js');
+var Cache = require('../index.js');
 
 var cache = new Cache();
 

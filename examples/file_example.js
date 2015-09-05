@@ -1,12 +1,12 @@
 'use strict';
 
-var Cache = require('./index.js');
+var Cache = require('../index.js');
 
 var cache = new Cache();
 
 var fs = require('fs');
 
-var readstream = fs.createReadStream('test.md');
+var readstream = fs.createReadStream('readme.md');
 var writestream = fs.createWriteStream('test2.md');
 var writestream2 = fs.createWriteStream('test3.md');
 
