@@ -74,29 +74,6 @@ StreamingCache.prototype.get = function (key) {
     }
 };
 
-StreamingCache.prototype.setMetadata = function (key, metadata) {
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
-    var data = cache.get(key);
-    if (!data) {
-        data = {};
-    }
-    data.metadata = metadata;
-    cache.put(key, data);
-};
-
-StreamingCache.prototype.getMetadata = function (key) {
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
-    var data = cache.get(key);
-    if (data && data.metadata) {
-        return data.metadata;
-    }
-    return null;
-};
-
 StreamingCache.prototype.set = function (key) {
     if (!key) {
         throw(new Error('Key expected'));
@@ -139,5 +116,28 @@ StreamingCache.prototype.set = function (key) {
 };
 
 StreamingCache.prototype.del = cache.del;
+
+StreamingCache.prototype.setMetadata = function (key, metadata) {
+    if (!key) {
+        throw(new Error('Key expected'));
+    }
+    var data = cache.get(key);
+    if (!data) {
+        data = {};
+    }
+    data.metadata = metadata;
+    cache.put(key, data);
+};
+
+StreamingCache.prototype.getMetadata = function (key) {
+    if (!key) {
+        throw(new Error('Key expected'));
+    }
+    var data = cache.get(key);
+    if (data && data.metadata) {
+        return data.metadata;
+    }
+    return null;
+};
 
 module.exports = StreamingCache;
