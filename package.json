@@ -14,7 +14,7 @@
   "author": "Laurent Zuijdwijk",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "memory-cache": "~0.1.4"
+    "lru-cache": "https://github.com/LaurentZuijdwijk/node-lru-cache/archive/master.tar.gz"
   },
   "devDependencies": {
     "jasmine-node": "^1.14.5"
