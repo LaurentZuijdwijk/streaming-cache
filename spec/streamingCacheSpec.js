@@ -14,17 +14,16 @@ describe('my test suite', function () {
         expect(function () {cache.set();}).toThrow('Key expected');
     });
     it('cache.set should return a stream', function () {
-        s.end();
         expect(s).toEqual(jasmine.any(Transform));
     });
     it('Writing to stream should set data', function (done) {
         s.write('a');
         s.write('b');
-        s.end();
         cache.getData('a', function (err, data) {
             expect(data.toString()).toEqual('ab')
             done();
         });
+        s.end();
     });
     it('getting stream should return readstream', function () {
         var r = cache.get('a');
@@ -32,12 +31,13 @@ describe('my test suite', function () {
     });
     it('should be written to and readable when set has ended', function (done) {
         s.write('ggg');
-        s.end();
         var r = cache.get('a');
         r.on('data', function (chunk) {
             expect(chunk.toString()).toEqual('ggg')
             done()
         })
+        s.end();
+
         expect(r).toEqual(jasmine.any(require('../lib/readStream')));
     });
     it('should be written to and readable when set is pending', function (done) {

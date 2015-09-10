@@ -27,6 +27,7 @@ var StreamingCache = function (options) {
 }
 
 StreamingCache.prototype.getData = function (key, cb) {
+    var self = this;
     if (!key) {
         throw(new Error('Key expected'));
     }
@@ -42,7 +43,7 @@ StreamingCache.prototype.getData = function (key, cb) {
             cb(err);
         })
         emitters[key].on('end', function (data) {
-            cb(null, this.cache.get(key).data);
+            cb(null, self.cache.get(key).data);
         })
     }
     else {
@@ -54,6 +55,7 @@ StreamingCache.prototype.getData = function (key, cb) {
 StreamingCache.prototype.get = function (key) {
     var object = this.cache.get(key);
     var stream;
+    var self = this;
     if (!object) {
         return undefined;
     }
@@ -63,7 +65,7 @@ StreamingCache.prototype.get = function (key) {
             stream.emit('error', error);
         });
         emitters[key].on('end', function (data) {
-            stream.setBuffer(this.cache.get(key).data);
+            stream.setBuffer(self.cache.get(key).data);
             stream.complete = true;
             stream.finish();
         });
@@ -84,11 +86,12 @@ StreamingCache.prototype.get = function (key) {
 };
 
 StreamingCache.prototype.set = function (key) {
+    var self = this;
     if (!key) {
         throw(new Error('Key expected'));
     }
     console.log('set!!!', key)
-    this.cache.set(key, {status : STATUS_PENDING});
+    self.cache.set(key, {status : STATUS_PENDING});
     emitters[key] = new EventEmitter();
     emitters[key]._buffer = [];
     var dataBuffer = emitters[key]._buffer;
@@ -102,21 +105,21 @@ StreamingCache.prototype.set = function (key) {
     };
 
     stream.on('error', function (err) {
-        this.cache.del(key);
+        self.cache.del(key);
         emitters[key].emit('error', err);
         stream.removeAllListeners();
         emitters[key].removeAllListeners();
         delete emitters[key];
     });
     stream.on('finish', function () {
-        var c = this.cache.get(key);
+        var c = self.cache.get(key);
         var buffer = Buffer.concat(dataBuffer)
         c.metadata = c.metadata || {};
         c.metadata.length = buffer.length;
         c.metadata.byteLength = buffer.byteLength;
         c.data = buffer;
         c.status = STATUS_DONE;
-        this.cache.put(key, c);
+        self.cache.set(key, c);
         emitters[key].emit('end');
         delete emitters[key];
     });
