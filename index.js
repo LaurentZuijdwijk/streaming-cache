@@ -134,12 +134,12 @@ StreamingCache.prototype.setMetadata = function (key, metadata) {
     if (!key) {
         throw(new Error('Key expected'));
     }
-    var data = cache.get(key);
+    var data = this.cache.get(key);
     if (!data) {
         data = {};
     }
     data.metadata = metadata;
-    cache.put(key, data);
+    this.cache.set(key, data);
 };
 
 StreamingCache.prototype.getMetadata = function (key) {

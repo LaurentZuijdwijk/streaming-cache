@@ -49,15 +49,27 @@ describe('my test suite', function () {
         r.on('end', spy)
 
         s.write('ggg');
-        s.end();
+        s.end('iii');
 
         setTimeout(function () {
             console.log(spy.calls)
             expect(spy).toHaveBeenCalled()
             expect(spy.calls.length).toEqual(4);
             expect(spy.calls[0].args.toString()).toEqual('hhh');
-            expect(spy.calls[1].args.toString()).toEqual('ggg');
+            expect(spy.calls[1].args.toString()).toEqual('gggiii');
             done();
         }, 200)
+    });
+
+    it('should handle metadata', function () {
+        cache.cache.set('abc', {data: 1});
+
+        cache.setMetadata('abc', 1234);
+        cache.setMetadata('def', {a: 'b'});
+        cache.setMetadata('ghi', 'abc');
+        expect(cache.getMetadata('abc')).toEqual(1234);
+        expect(cache.getMetadata('def').a).toEqual('b');
+        expect(cache.getMetadata('ghi')).toEqual('abc');
+        expect(cache.cache.get('abc').data).toEqual(1);
     });
 });
