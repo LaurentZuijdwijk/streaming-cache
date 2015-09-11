@@ -52,7 +52,6 @@ describe('my test suite', function () {
         s.end('iii');
 
         setTimeout(function () {
-            console.log(spy.calls)
             expect(spy).toHaveBeenCalled()
             expect(spy.calls.length).toEqual(4);
             expect(spy.calls[0].args.toString()).toEqual('hhh');

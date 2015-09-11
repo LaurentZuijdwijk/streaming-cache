@@ -90,7 +90,6 @@ StreamingCache.prototype.set = function (key) {
     if (!key) {
         throw(new Error('Key expected'));
     }
-    console.log('set!!!', key)
     self.cache.set(key, {status : STATUS_PENDING});
     emitters[key] = new EventEmitter();
     emitters[key]._buffer = [];
