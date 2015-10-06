@@ -26,6 +26,17 @@ var StreamingCache = function (options) {
     this.cache = LRU(options);
 }
 
+StreamingCache.prototype.setData = function (key, data) {
+    var self = this;
+    if (!key) {
+        throw(new Error('Key expected'));
+    }
+    var c = {};
+    c.data = data;
+    c.status = STATUS_DONE;
+    self.cache.set(key, c);
+}
+
 StreamingCache.prototype.getData = function (key, cb) {
     var self = this;
     if (!key) {
@@ -66,11 +77,9 @@ StreamingCache.prototype.get = function (key) {
         });
         emitters[key].on('end', function (data) {
             stream.setBuffer(self.cache.get(key).data);
-            stream.complete = true;
-            stream.finish();
         });
 
-        stream.setBuffer(Buffer.concat(emitters[key]._buffer));
+        stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
 
         emitters[key].on('data', function (chunk) {
             stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
@@ -80,7 +89,6 @@ StreamingCache.prototype.get = function (key) {
     else {
         stream = new ReadStream();
         stream.setBuffer(object.data);
-        stream.complete = true;
         return stream;
     }
 };
