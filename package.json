@@ -4,7 +4,7 @@
   "description": "Cache and replay NodeJS streams",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/jasmine-node/bin/jasmine-node ./spec"
+    "test": "istanbul -x=**/spec/** cover ./node_modules/jasmine-node/bin/jasmine-node ./spec"
   },
   "keywords": [
     "cache",
@@ -17,6 +17,7 @@
     "lru-cache": "https://github.com/LaurentZuijdwijk/node-lru-cache/archive/master.tar.gz"
   },
   "devDependencies": {
+    "istanbul": "^0.3.22",
     "jasmine-node": "^1.14.5"
   }
 }
