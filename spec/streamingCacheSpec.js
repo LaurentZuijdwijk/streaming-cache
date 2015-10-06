@@ -5,7 +5,7 @@ var StreamingCache = require('../index');
 var Transform = require('stream').Transform;
 
 var cache = new StreamingCache();
-describe('my test suite', function () {
+describe('streaming cache', function () {
     var s;
     beforeEach(function () {
         s = cache.set('a');
@@ -25,10 +25,12 @@ describe('my test suite', function () {
         });
         s.end();
     });
+
     it('getting stream should return readstream', function () {
         var r = cache.get('a');
         expect(r).toEqual(jasmine.any(require('../lib/readStream')));
     });
+
     it('should be written to and readable when set has ended', function (done) {
         s.write('ggg');
         var r = cache.get('a');
@@ -41,21 +43,23 @@ describe('my test suite', function () {
         expect(r).toEqual(jasmine.any(require('../lib/readStream')));
     });
     it('should be written to and readable when set is pending', function (done) {
-        var spy = jasmine.createSpy();
+        var dataSpy = jasmine.createSpy();
+        var endSpy = jasmine.createSpy();
         s.write('hhh');
         var r = cache.get('a');
 
-        r.on('data', spy)
-        r.on('end', spy)
+        r.on('data', dataSpy);
+        r.on('end', endSpy);
 
         s.write('ggg');
         s.end('iii');
 
         setTimeout(function () {
-            expect(spy).toHaveBeenCalled()
-            expect(spy.calls.length).toEqual(4);
-            expect(spy.calls[0].args.toString()).toEqual('hhh');
-            expect(spy.calls[1].args.toString()).toEqual('gggiii');
+            expect(spy).toHaveBeenCalled();
+            expect(dataSpy.calls.length).toEqual(1);
+            expect(dataSpy.calls[0].args.toString()).toEqual('hhhgggiii');
+            expect(endSpy.calls.length).toEqual(1);
+
             done();
         }, 200)
     });
