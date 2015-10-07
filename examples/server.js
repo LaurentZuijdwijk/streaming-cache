@@ -6,7 +6,7 @@ var fs = require('fs');
 var Cache = require('../index.js');
 var cache = new Cache();
 
-function handleRequest(request, response) {
+function xhandleRequest(request, response) {
     var _cache = cache.get('a');
     var meta;
     if (_cache) {
@@ -20,6 +20,9 @@ function handleRequest(request, response) {
     else {
         var readstream = fs.createReadStream('./stream.jpg');
         readstream.pipe(cache.set('a')).pipe(response)
+        // fs.readFile('./stream.jpg', function (err, data) {
+        //     //             cache.setData('a', data);
+        //     response.end(data)
     }
 }
 
@@ -31,3 +34,17 @@ server.listen(PORT, function () {
     //Callback triggered when server is successfully listening. Hurray!
     console.log('Server listening on: http://localhost:%s', PORT);
 });
+
+function handleRequest(request, response) {
+    cache.getData('a', function (err, data) {
+        if (data) {
+            response.end(data);
+        }
+        else {
+            fs.readFile('./stream.jpg', function (err, data) {
+                cache.setData('a', data);
+                response.end(data)
+            });
+        }
+    });
+}

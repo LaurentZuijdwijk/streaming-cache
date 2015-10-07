@@ -28,20 +28,19 @@ var StreamingCache = function (options) {
 
 StreamingCache.prototype.setData = function (key, data) {
     var self = this;
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
+    checkKey(key);
+
     var c = {};
     c.data = data;
     c.status = STATUS_DONE;
     self.cache.set(key, c);
+    return this;
 }
 
 StreamingCache.prototype.getData = function (key, cb) {
     var self = this;
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
+    checkKey(key);
+
     if (!cb) {
         throw(new Error('callback expected'));
     }
@@ -62,11 +61,53 @@ StreamingCache.prototype.getData = function (key, cb) {
         return;
     }
 }
+StreamingCache.prototype.setMetadata = function (key, metadata) {
+    checkKey(key);
 
+    var data = this.cache.get(key);
+    if (!data) {
+        data = {};
+    }
+    data.metadata = metadata;
+    this.cache.set(key, data);
+};
+
+StreamingCache.prototype.getMetadata = function (key) {
+    checkKey(key);
+
+    var data = this.cache.get(key);
+    if (data && data.metadata) {
+        return data.metadata;
+    }
+    return null;
+};
+
+StreamingCache.prototype.exists = function (key) {
+    checkKey(key);
+    var object = this.cache.get(key);
+    if (object && object.status) {
+        return true;
+    }
+    else {
+        return false;
+    }
+};
+
+StreamingCache.prototype.del = function (key) {
+    this.cache.del(key);
+};
+function checkKey(key) {
+    if (!key) {
+        throw(new Error('Key expected'));
+    }
+}
 StreamingCache.prototype.get = function (key) {
+    checkKey(key);
+
     var object = this.cache.get(key);
     var stream;
     var self = this;
+
     if (!object) {
         return undefined;
     }
@@ -95,9 +136,8 @@ StreamingCache.prototype.get = function (key) {
 
 StreamingCache.prototype.set = function (key) {
     var self = this;
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
+    checkKey(key);
+
     self.cache.set(key, {status : STATUS_PENDING});
     emitters[key] = new EventEmitter();
     emitters[key]._buffer = [];
@@ -131,33 +171,6 @@ StreamingCache.prototype.set = function (key) {
         delete emitters[key];
     });
     return stream;
-};
-
-StreamingCache.prototype.del = function (key) {
-    this.cache.del(key);
-};
-
-StreamingCache.prototype.setMetadata = function (key, metadata) {
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
-    var data = this.cache.get(key);
-    if (!data) {
-        data = {};
-    }
-    data.metadata = metadata;
-    this.cache.set(key, data);
-};
-
-StreamingCache.prototype.getMetadata = function (key) {
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
-    var data = this.cache.get(key);
-    if (data && data.metadata) {
-        return data.metadata;
-    }
-    return null;
 };
 
 module.exports = StreamingCache;
