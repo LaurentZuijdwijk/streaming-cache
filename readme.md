@@ -3,7 +3,7 @@
 Streaming Cache
 ===============
 
-Cache, queue and distribute streams immediately. Streams can be replayed immediately.
+Cache, queue and distribute streams immediately. Streams can be replayed immediately, even if the source is not finished.
 
 Usefull for caching (slow) streaming connections, such as S3 requests or complex database queries.  
 
@@ -29,7 +29,7 @@ var fs = require('fs');
 var readstream = fs.createReadStream('readme.md');
 var writestream = fs.createWriteStream('test2.txt');
 
-readstream.pipe(cache.put('a'));
+readstream.pipe(cache.set('a'));
 
 setTimeout(function(){
   writestream2.write('written from cache\n\n');
@@ -42,10 +42,10 @@ setTimeout(function(){
 API
 ---
 
-##### put(key)
+##### set(key)
 returns a transform stream that can be piped to
 ```
-fileStream.pipe(cache.put('key')).pipe(res);
+fileStream.pipe(cache.set('key')).pipe(res);
 ```
 
 
@@ -66,18 +66,19 @@ A set data synchronously to stream at a later moment
 Get data with a callback. 
 
 ```javascript
-cache.getData('key', function(err, data{
+cache.getData('key', function(err, data){
 	if(err){ 
 	  //handle error
 	}
+	// do something with data
 }));
 ```
 #### setMetadata(key, data)
+Set metadata for a stream to be used later.
 
 #### getMetadata(key, data)
+Get metadata
 
-
-
-
-
+#### exists(key)
+returns true or false if a key exists.
 
