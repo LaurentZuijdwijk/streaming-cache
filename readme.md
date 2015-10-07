@@ -1,4 +1,4 @@
-!['Build status'](https://travis-ci.org/LaurentZuijdwijk/streaming-cache.svg?branch=master)
+[![Circle CI](https://circleci.com/gh/LaurentZuijdwijk/streaming-cache/tree/master.svg?style=svg)](https://circleci.com/gh/LaurentZuijdwijk/streaming-cache/tree/master)
 
 Streaming Cache
 ===============
