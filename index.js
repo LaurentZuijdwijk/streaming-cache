@@ -153,7 +153,9 @@ StreamingCache.prototype.set = function (key) {
 
     stream.on('error', function (err) {
         self.cache.del(key);
-        emitters[key].emit('error', err);
+        if (emitters[key] && emitters[key]._events.error) {
+            emitters[key].emit('error', err);
+        }
         stream.removeAllListeners();
         emitters[key].removeAllListeners();
         delete emitters[key];
