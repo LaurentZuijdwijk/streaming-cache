@@ -1,15 +1,16 @@
 'use strict';
 
+
 var LRU = require('lru-cache') ;
+var Transform = require('stream').Transform;
 
 var EventEmitter = require('events').EventEmitter;
-var emitters = {};
 
 var STATUS_PENDING = 1;
 var STATUS_DONE = 2;
 
 var ReadStream = require('./lib/readStream');
-var Transform = require('stream').Transform;
+var emitters = {};
 
 var lruOptions = {
     length: function (cachedObject) {
@@ -24,6 +25,16 @@ var lruOptions = {
 
 var StreamingCache = function (options) {
     this.cache = LRU(options);
+    Object.defineProperty(this, 'length', {
+        get: function () {
+            return this.cache.length;
+        }
+    });
+    Object.defineProperty(this, 'itemCount', {
+        get: function () {
+            return this.cache.itemCount;
+        }
+    });
 }
 
 StreamingCache.prototype.setData = function (key, data) {
@@ -49,6 +60,7 @@ StreamingCache.prototype.getData = function (key, cb) {
         cb('cache miss');
     }
     else if (object.status === STATUS_PENDING) {
+
         emitters[key].on('error', function (err) {
             cb(err);
         })
@@ -101,6 +113,24 @@ function checkKey(key) {
         throw(new Error('Key expected'));
     }
 }
+
+StreamingCache.prototype.returnPendingStream = function(key){
+    var stream = new ReadStream();
+    emitters[key].on('error', function (error) {
+        stream.emit('error', error);
+    });
+    emitters[key].on('end', function (data) {
+        stream.setBuffer(data);
+    });
+
+    stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
+
+    emitters[key].on('data', function (chunk) {
+        stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
+    });
+    return stream;
+}
+
 StreamingCache.prototype.get = function (key) {
     checkKey(key);
 
@@ -112,20 +142,7 @@ StreamingCache.prototype.get = function (key) {
         return undefined;
     }
     else if (object.status === STATUS_PENDING) {
-        stream = new ReadStream();
-        emitters[key].on('error', function (error) {
-            stream.emit('error', error);
-        });
-        emitters[key].on('end', function (data) {
-            stream.setBuffer(self.cache.get(key).data);
-        });
-
-        stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
-
-        emitters[key].on('data', function (chunk) {
-            stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
-        });
-        return stream;
+        return this.returnPendingStream(key);
     }
     else {
         stream = new ReadStream();
@@ -140,13 +157,12 @@ StreamingCache.prototype.set = function (key) {
 
     self.cache.set(key, {status : STATUS_PENDING});
     emitters[key] = new EventEmitter();
+    emitters[key].setMaxListeners(250);
     emitters[key]._buffer = [];
-    var dataBuffer = emitters[key]._buffer;
-
     var stream = new Transform();
 
     stream._transform = function (chunk, encoding, done) {
-        dataBuffer.push(chunk);
+        emitters[key]._buffer.push(chunk);
         emitters[key].emit('data', chunk);
         done(null, chunk);
     };
@@ -162,14 +178,14 @@ StreamingCache.prototype.set = function (key) {
     });
     stream.on('finish', function () {
         var c = self.cache.get(key);
-        var buffer = Buffer.concat(dataBuffer)
+        var buffer = Buffer.concat(emitters[key]._buffer)
         c.metadata = c.metadata || {};
         c.metadata.length = buffer.length;
         c.metadata.byteLength = buffer.byteLength;
         c.data = buffer;
         c.status = STATUS_DONE;
         self.cache.set(key, c);
-        emitters[key].emit('end');
+        emitters[key].emit('end', Buffer.concat(emitters[key]._buffer));
         delete emitters[key];
     });
     return stream;
