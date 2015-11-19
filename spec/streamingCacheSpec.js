@@ -23,7 +23,7 @@ describe('streaming cache', function () {
             expect(data.toString()).toEqual('ab')
             done();
         });
-        s.end();
+        s.end(null);
     });
 
     it('getting stream should return readstream', function () {
@@ -63,7 +63,7 @@ describe('streaming cache', function () {
             done();
         }, 200)
     });
-    it('should handle sync setData', function (done) {
+    it('should handle sync setData', function () {
         expect(cache.setData()).toThrow();
         cache.setData('b', new Buffer(100));
         expect(cache.cache.get('b').status).toEqual(2);
@@ -97,6 +97,7 @@ describe('streaming cache', function () {
         cache.setData('b', new Buffer(100));
         cache.getData('b', function (err, data) {
             expect(data.length).toEqual(100);
+            done();
         });
     });
 
@@ -105,5 +106,6 @@ describe('streaming cache', function () {
         expect(cache.exists('aaa')).toEqual(false);
         cache.setData('aaa', 'value');
         expect(cache.exists('aaa')).toEqual(true);
+        done()
     });
 });
