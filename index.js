@@ -151,11 +151,15 @@ StreamingCache.prototype.get = function (key) {
     }
 };
 
+StreamingCache.prototype.reset = function() {
+    this.cache.reset();
+};
+
 StreamingCache.prototype.set = function (key) {
     var self = this;
     checkKey(key);
 
-    self.cache.set(key, {status : STATUS_PENDING});
+    self.cache.set(key, {status : STATUS_PENDING, metadata: {}});
     emitters[key] = new EventEmitter();
     emitters[key].setMaxListeners(250);
     emitters[key]._buffer = [];
