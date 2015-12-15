@@ -10,6 +10,7 @@ describe('streaming cache', function () {
     beforeEach(function () {
         s = cache.set('a');
     })
+
     it('cache.set needs to be called with a key', function () {
         expect(function () {cache.set();}).toThrow('Key expected');
     });
@@ -55,7 +56,7 @@ describe('streaming cache', function () {
         s.end('iii');
 
         setTimeout(function () {
-            expect(spy).toHaveBeenCalled();
+            expect(dataSpy).toHaveBeenCalled();
             expect(dataSpy.calls.length).toEqual(1);
             expect(dataSpy.calls[0].args.toString()).toEqual('hhhgggiii');
             expect(endSpy.calls.length).toEqual(1);
@@ -64,15 +65,17 @@ describe('streaming cache', function () {
         }, 200)
     });
     it('should handle sync setData', function () {
-        expect(cache.setData()).toThrow();
+        expect(cache.setData).toThrow();
         cache.setData('b', new Buffer(100));
         expect(cache.cache.get('b').status).toEqual(2);
         expect(cache.cache.get('b').data.length).toEqual(100);
     });
-    it('should handle getData', function (done) {
-        expect(cache.getData()).toThrow();
-        expect(cache.getData('b')).toThrow();
-        expect(cache.getData('b', function (err, data) {
+
+    it('should handle getData when data is missing', function (done) {
+        expect(cache.getData).toThrow();
+        expect(function() { cache.getData('c') }).toThrow();
+        expect(cache.getData('c', function (err, data) {
+            expect(data).toEqual(undefined);
             expect(err).toEqual('cache miss');
             done();
         }));
@@ -80,18 +83,20 @@ describe('streaming cache', function () {
 
     it('should handle setmetadata', function () {
         cache.cache.set('abc', {data: 'test'});
-        expect(cache.setMetadata()).toThrow();
+        expect(cache.setMetadata).toThrow();
         cache.setMetadata('abc', 1234);
         expect(cache.cache.get('abc').data).toEqual('test');
-        expect(cache.cache.get('abc').data.metaData).toEqual(1234);
+        expect(cache.getMetadata('abc')).toEqual(1234);
     });
 
     it('should handle getmetadata', function () {
         cache.cache.set('abc', {data: 1, metaData: 'bbb'});
-        expect(cache.getMetadata()).toThrow();
+        expect(cache.getMetadata).toThrow();
 
         cache.getMetadata('abc', 'bbb');
     });
+
+
 
     it('should handle getData', function (done) {
         cache.setData('b', new Buffer(100));
@@ -102,10 +107,11 @@ describe('streaming cache', function () {
     });
 
     it('should handle key exists', function (done) {
-        expect(cache.exists()).toThrow();
+        expect(cache.exists).toThrow();
         expect(cache.exists('aaa')).toEqual(false);
         cache.setData('aaa', 'value');
         expect(cache.exists('aaa')).toEqual(true);
         done()
     });
+
 });
