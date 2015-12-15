@@ -96,7 +96,16 @@ describe('streaming cache', function () {
         cache.getMetadata('abc', 'bbb');
     });
 
+    it('should initially set metadata once key is set', function () {
+        cache.set('abc', {data: 'test'});
+        expect(cache.getMetadata('abc')).toEqual({});
+    });
 
+    it('should reset the cache when called', function() {
+        cache.setData('aaa', 'value');
+        cache.reset();
+        expect(cache.exists('aaa')).toEqual(false);
+    });
 
     it('should handle getData', function (done) {
         cache.setData('b', new Buffer(100));
@@ -106,12 +115,11 @@ describe('streaming cache', function () {
         });
     });
 
-    it('should handle key exists', function (done) {
+    it('should handle key exists', function () {
         expect(cache.exists).toThrow();
         expect(cache.exists('aaa')).toEqual(false);
         cache.setData('aaa', 'value');
         expect(cache.exists('aaa')).toEqual(true);
-        done()
     });
 
 });
