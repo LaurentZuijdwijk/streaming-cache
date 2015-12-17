@@ -1,6 +1,5 @@
 'use strict';
 
-
 var LRU = require('lru-cache') ;
 var Transform = require('stream').Transform;
 
@@ -10,6 +9,9 @@ var STATUS_PENDING = 1;
 var STATUS_DONE = 2;
 
 var ReadStream = require('./lib/readStream');
+var Streams = require('stream');
+
+var LinkedList = require('linkedlist');
 var emitters = {};
 
 var lruOptions = {
@@ -60,7 +62,6 @@ StreamingCache.prototype.getData = function (key, cb) {
         cb('cache miss');
     }
     else if (object.status === STATUS_PENDING) {
-
         emitters[key].on('error', function (err) {
             cb(err);
         })
@@ -114,7 +115,7 @@ function checkKey(key) {
     }
 }
 
-StreamingCache.prototype.returnPendingStream = function(key){
+StreamingCache.prototype.returnPendingStream = function (key) {
     var stream = new ReadStream();
     emitters[key].on('error', function (error) {
         stream.emit('error', error);
@@ -151,7 +152,7 @@ StreamingCache.prototype.get = function (key) {
     }
 };
 
-StreamingCache.prototype.reset = function() {
+StreamingCache.prototype.reset = function () {
     this.cache.reset();
 };
 
@@ -163,13 +164,20 @@ StreamingCache.prototype.set = function (key) {
     emitters[key] = new EventEmitter();
     emitters[key].setMaxListeners(250);
     emitters[key]._buffer = [];
-    var stream = new Transform();
 
-    stream._transform = function (chunk, encoding, done) {
-        emitters[key]._buffer.push(chunk);
-        emitters[key].emit('data', chunk);
-        done(null, chunk);
-    };
+    var chunks = new LinkedList();
+
+    var stream = new Streams.Duplex({
+        read: function (n) {
+            this.push(chunks.shift());
+        },
+        write: function (chunk, encoding, next) {
+            emitters[key]._buffer.push(chunk);
+            emitters[key].emit('data', chunk);
+            chunks.push(chunk);
+            next(null, chunk);
+        }
+    });
 
     stream.on('error', function (err) {
         self.cache.del(key);
@@ -181,7 +189,9 @@ StreamingCache.prototype.set = function (key) {
         delete emitters[key];
     });
     stream.on('finish', function () {
+        chunks.push(null);
         var c = self.cache.get(key);
+        
         var buffer = Buffer.concat(emitters[key]._buffer)
         c.metadata = c.metadata || {};
         c.metadata.length = buffer.length;
