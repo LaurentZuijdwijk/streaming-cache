@@ -167,17 +167,17 @@ StreamingCache.prototype.set = function (key) {
 
     var chunks = new LinkedList();
 
-    var stream = new Streams.Duplex({
-        read: function (n) {
+    var stream = new Streams.Duplex()
+    stream._read = function (n) {
             this.push(chunks.shift());
-        },
-        write: function (chunk, encoding, next) {
+    }
+    stream._write =  function (chunk, encoding, next) {
             emitters[key]._buffer.push(chunk);
             emitters[key].emit('data', chunk);
             chunks.push(chunk);
             next(null, chunk);
-        }
-    });
+    }
+    // });
 
     stream.on('error', function (err) {
         self.cache.del(key);
