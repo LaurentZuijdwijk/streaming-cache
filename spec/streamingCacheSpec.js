@@ -2,7 +2,7 @@
 'use strict';
 
 var StreamingCache = require('../index');
-var Transform = require('stream').Transform;
+var Duplex = require('stream').Duplex;
 
 var cache = new StreamingCache();
 describe('streaming cache', function () {
@@ -15,7 +15,7 @@ describe('streaming cache', function () {
         expect(function () {cache.set();}).toThrow('Key expected');
     });
     it('cache.set should return a stream', function () {
-        expect(s).toEqual(jasmine.any(Transform));
+        expect(s).toEqual(jasmine.any(Duplex));
     });
     it('Writing to stream should set data', function (done) {
         s.write('a');

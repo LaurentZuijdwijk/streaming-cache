@@ -12,9 +12,10 @@
     "queue"
   ],
   "author": "Laurent Zuijdwijk",
-  "repository" : "https://github.com/LaurentZuijdwijk/streaming-cache",
+  "repository": "https://github.com/LaurentZuijdwijk/streaming-cache",
   "license": "BSD-2-Clause",
   "dependencies": {
+    "linkedlist": "^1.0.1",
     "lru-cache": "^2.7.0"
   },
   "devDependencies": {
