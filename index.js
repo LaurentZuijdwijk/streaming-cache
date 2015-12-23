@@ -22,7 +22,7 @@ var lruOptions = {
     }
 };
 
-var StreamingCache = function (options) {
+var StreamingCache = function StreamingCache(options) {
     this.cache = LRU(options);
     Object.defineProperty(this, 'length', {
         get: function () {
