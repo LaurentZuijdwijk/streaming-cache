@@ -8,6 +8,7 @@ var cache = new StreamingCache();
 describe('streaming cache', function () {
     var s;
     beforeEach(function () {
+        cache = new StreamingCache()
         s = cache.set('a');
     })
 
@@ -82,13 +83,27 @@ describe('streaming cache', function () {
     });
 
     it('should handle setmetadata', function () {
-        cache.cache.set('abc', {data: 'test'});
+        cache.setMetadata('abc', {a:'c'});
+        cache.setData('abc', 'test');
         expect(cache.setMetadata).toThrow();
-        cache.setMetadata('abc', 1234);
         expect(cache.cache.get('abc').data).toEqual('test');
-        expect(cache.getMetadata('abc')).toEqual(1234);
+        expect(cache.getMetadata('abc').a).toEqual('c');
     });
 
+    it('should save the length to metadata', function (done) {
+        cache.setMetadata('abc', {a:'b'});
+        var s = cache.set('abc');
+        s.write('a');
+        s.write('b');
+        s.end('');
+
+        setTimeout(function(){
+            expect(cache.cache.get('abc').data.toString()).toEqual('ab');
+            expect(cache.getMetadata('abc').a).toEqual('b');
+            expect(cache.getMetadata('abc').length).toEqual(2);
+            done();
+        }, 10)
+    });
     it('should handle getmetadata', function () {
         cache.cache.set('abc', {data: 1, metaData: 'bbb'});
         expect(cache.getMetadata).toThrow();

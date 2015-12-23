@@ -42,6 +42,8 @@ StreamingCache.prototype.setData = function (key, data) {
 
     var c = {};
     c.data = data;
+    c.metadata = self.getMetadata(key) || {};
+
     c.status = STATUS_DONE;
     self.cache.set(key, c);
     return this;
@@ -156,7 +158,9 @@ StreamingCache.prototype.set = function (key) {
     var self = this;
     checkKey(key);
 
-    self.cache.set(key, {status : STATUS_PENDING, metadata: {}});
+    var metadata = self.getMetadata(key) || {};
+
+    self.cache.set(key, { status : STATUS_PENDING, metadata: metadata});
     emitters[key] = new EventEmitter();
     emitters[key].setMaxListeners(250);
     emitters[key]._buffer = [];
@@ -188,7 +192,7 @@ StreamingCache.prototype.set = function (key) {
 
         var buffer = Buffer.concat(emitters[key]._buffer)
         c.metadata = c.metadata || {};
-        c.metadata.length = buffer.length;
+        c.metadata.length = buffer.toString().length;
         c.metadata.byteLength = buffer.byteLength;
         c.data = buffer;
         c.status = STATUS_DONE;
