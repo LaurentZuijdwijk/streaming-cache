@@ -168,12 +168,25 @@ StreamingCache.prototype.set = function (key) {
     var chunks = new LinkedList();
     var stream = new Streams.Duplex()
     stream._read = function () {
-        this.push(chunks.shift());
+        var chunk = chunks.shift();
+        if(!chunk){
+            this.needRead = true;
+        }
+        else{
+           this.push(chunk);
+           this.needRead = false;
+        }
     }
     stream._write =  function (chunk, encoding, next) {
         emitters[key]._buffer.push(chunk);
         emitters[key].emit('data', chunk);
-        chunks.push(chunk);
+        if(this.needRead){
+            this.push(chunk);
+        }
+        else{
+            chunks.push(chunk);
+
+        }
         next(null, chunk);
     }
 
@@ -187,7 +200,12 @@ StreamingCache.prototype.set = function (key) {
         delete emitters[key];
     });
     stream.on('finish', function () {
+        if(this.needRead){
+            this.push(null);
+        }
+        else{
         chunks.push(null);
+        }
         var c = self.cache.get(key);
 
         var buffer = Buffer.concat(emitters[key]._buffer)
