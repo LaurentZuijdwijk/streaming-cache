@@ -1,10 +1,7 @@
 'use strict';
 
 var LRU = require('lru-cache') ;
-var Transform = require('stream').Transform;
-
 var EventEmitter = require('events').EventEmitter;
-
 var STATUS_PENDING = 1;
 var STATUS_DONE = 2;
 
@@ -137,7 +134,6 @@ StreamingCache.prototype.get = function (key) {
 
     var object = this.cache.get(key);
     var stream;
-    var self = this;
 
     if (!object) {
         return undefined;
@@ -166,18 +162,16 @@ StreamingCache.prototype.set = function (key) {
     emitters[key]._buffer = [];
 
     var chunks = new LinkedList();
-
     var stream = new Streams.Duplex()
-    stream._read = function (n) {
-            this.push(chunks.shift());
+    stream._read = function () {
+        this.push(chunks.shift());
     }
     stream._write =  function (chunk, encoding, next) {
-            emitters[key]._buffer.push(chunk);
-            emitters[key].emit('data', chunk);
-            chunks.push(chunk);
-            next(null, chunk);
+        emitters[key]._buffer.push(chunk);
+        emitters[key].emit('data', chunk);
+        chunks.push(chunk);
+        next(null, chunk);
     }
-    // });
 
     stream.on('error', function (err) {
         self.cache.del(key);
@@ -191,7 +185,7 @@ StreamingCache.prototype.set = function (key) {
     stream.on('finish', function () {
         chunks.push(null);
         var c = self.cache.get(key);
-        
+
         var buffer = Buffer.concat(emitters[key]._buffer)
         c.metadata = c.metadata || {};
         c.metadata.length = buffer.length;
