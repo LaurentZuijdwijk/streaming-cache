@@ -16,7 +16,7 @@ If there are for example 3 requests for a certain file in close succession, then
 Performance
 -----------
 
-2.5GB per second for a single process on localhost using AB. (4th gen i7).
+Serving from this cache is extremely fast. On my local machine I get 2.5GB per second for a single process on localhost using AB. (4th gen i7).
 
 Installation
 ------------
@@ -44,6 +44,11 @@ setTimeout(function(){
 
 ```
 
+Options
+-------
+
+For a list of options see: https://www.npmjs.com/package/lru-cache
+
 
 API
 ---
@@ -55,7 +60,7 @@ fileStream.pipe(cache.set('key')).pipe(res);
 ```
 
 
-##### get(key):ReadableStream 
+##### get(key) => ReadableStream 
 
 ```javascript
 var cached = cache.get('key');
@@ -65,7 +70,7 @@ if(cached){
 ```
 
 
-#### setData(key, data)
+#### setData(key, data) => WriteableStream
 A set data synchronously to stream at a later moment
 
 #### getData
