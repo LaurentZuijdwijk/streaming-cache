@@ -23,6 +23,7 @@ var lruOptions = {
 };
 
 var StreamingCache = function StreamingCache(options) {
+    options = options || {};
     options.length = lruOptions.length;
     this.cache = LRU(options);
     Object.defineProperty(this, 'length', {
@@ -208,6 +209,7 @@ StreamingCache.prototype.set = function (key) {
             chunks.push(null);
         }
         var c = self.cache.get(key);
+        chunks = null;
         if (!c) {
             emitters[key].emit('end', Buffer.concat(emitters[key]._buffer));
             delete emitters[key];

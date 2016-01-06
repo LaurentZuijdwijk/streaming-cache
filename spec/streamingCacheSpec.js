@@ -74,7 +74,7 @@ describe('streaming cache', function () {
 
     it('should handle getData when data is missing', function (done) {
         expect(cache.getData).toThrow();
-        expect(function() { cache.getData('c') }).toThrow();
+        expect(function () { cache.getData('c') }).toThrow();
         expect(cache.getData('c', function (err, data) {
             expect(data).toEqual(undefined);
             expect(err).toEqual('cache miss');
@@ -83,7 +83,7 @@ describe('streaming cache', function () {
     });
 
     it('should handle setmetadata', function () {
-        cache.setMetadata('abc', {a:'c'});
+        cache.setMetadata('abc', {a: 'c'});
         cache.setData('abc', 'test');
         expect(cache.setMetadata).toThrow();
         expect(cache.cache.get('abc').data).toEqual('test');
@@ -91,13 +91,13 @@ describe('streaming cache', function () {
     });
 
     it('should save the length to metadata', function (done) {
-        cache.setMetadata('abc', {a:'b'});
+        cache.setMetadata('abc', {a: 'b'});
         var s = cache.set('abc');
         s.write('a');
         s.write('b');
         s.end('');
 
-        setTimeout(function(){
+        setTimeout(function () {
             expect(cache.cache.get('abc').data.toString()).toEqual('ab');
             expect(cache.getMetadata('abc').a).toEqual('b');
             expect(cache.getMetadata('abc').length).toEqual(2);
@@ -116,7 +116,7 @@ describe('streaming cache', function () {
         expect(cache.getMetadata('abc')).toEqual({});
     });
 
-    it('should reset the cache when called', function() {
+    it('should reset the cache when called', function () {
         cache.setData('aaa', 'value');
         cache.reset();
         expect(cache.exists('aaa')).toEqual(false);
@@ -136,5 +136,24 @@ describe('streaming cache', function () {
         cache.setData('aaa', 'value');
         expect(cache.exists('aaa')).toEqual(true);
     });
+});
 
+describe('streaming cache short timeout', function () {
+    var s;
+    beforeEach(function () {
+        cache = new StreamingCache({maxAge: 100})
+        s = cache.set('b');
+    });
+    it('Writing to stream should set data', function (done) {
+        s.write('a');
+        s.write('b');
+        s.end(null);
+        setTimeout(function () {
+            expect(s.read().toString() + s.read().toString()).toEqual('ab')
+            cache.getData('b', function (err, data) {
+                expect(data.toString()).toEqual(null)
+                done();
+            });
+        }, 130);
+    });
 });
