@@ -7,8 +7,6 @@ var s = cache.set('a');
 var intervalId = setInterval(function () {
     if (cnt >= 50) {
         clearInterval(intervalId);
-        console.log('');
-        //cache.get('a').pipe(process.stdout);
         s.end();
     } else {
         s.write(cnt + ' hello\n');
