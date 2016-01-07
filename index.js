@@ -171,6 +171,10 @@ StreamingCache.prototype.set = function (key) {
     var chunks = new LinkedList();
     var stream = new Streams.Duplex()
     stream._read = function () {
+        if(!chunks){
+            this.needRead = true;
+            return;
+        }
         var chunk = chunks.shift();
         if (!chunk) {
             this.needRead = true;
