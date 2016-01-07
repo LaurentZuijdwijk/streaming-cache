@@ -23,6 +23,8 @@ var lruOptions = {
 };
 
 var StreamingCache = function StreamingCache(options) {
+    options = options || {};
+    options.length = lruOptions.length;
     this.cache = LRU(options);
     Object.defineProperty(this, 'length', {
         get: function () {
@@ -73,6 +75,7 @@ StreamingCache.prototype.getData = function (key, cb) {
         return;
     }
 }
+
 StreamingCache.prototype.setMetadata = function (key, metadata) {
     checkKey(key);
 
@@ -169,23 +172,22 @@ StreamingCache.prototype.set = function (key) {
     var stream = new Streams.Duplex()
     stream._read = function () {
         var chunk = chunks.shift();
-        if(!chunk){
+        if (!chunk) {
             this.needRead = true;
         }
-        else{
-           this.push(chunk);
-           this.needRead = false;
+        else {
+            this.push(chunk);
+            this.needRead = false;
         }
     }
     stream._write =  function (chunk, encoding, next) {
         emitters[key]._buffer.push(chunk);
         emitters[key].emit('data', chunk);
-        if(this.needRead){
+        if (this.needRead) {
             this.push(chunk);
         }
-        else{
+        else {
             chunks.push(chunk);
-
         }
         next(null, chunk);
     }
@@ -200,15 +202,20 @@ StreamingCache.prototype.set = function (key) {
         delete emitters[key];
     });
     stream.on('finish', function () {
-        if(this.needRead){
+        if (this.needRead) {
             this.push(null);
         }
-        else{
-        chunks.push(null);
+        else {
+            chunks.push(null);
         }
         var c = self.cache.get(key);
-
-        var buffer = Buffer.concat(emitters[key]._buffer)
+        chunks = null;
+        if (!c) {
+            emitters[key].emit('end', Buffer.concat(emitters[key]._buffer));
+            delete emitters[key];
+            return;
+        }
+        var buffer = Buffer.concat(emitters[key]._buffer);
         c.metadata = c.metadata || {};
         c.metadata.length = buffer.toString().length;
         c.metadata.byteLength = buffer.byteLength;
