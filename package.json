@@ -16,6 +16,7 @@
   "license": "BSD-2-Clause",
   "dependencies": {
     "linkedlist": "^1.0.1",
+    "lodash.assign": "^4.0.1",
     "lru-cache": "^2.7.0"
   },
   "devDependencies": {
