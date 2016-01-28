@@ -115,26 +115,24 @@ StreamingCache.prototype.returnPendingStream = function (key) {
 StreamingCache.prototype.get = function (key) {
     utils.ensureDefined(key, 'Key');
 
-    var object = this.cache.get(key);
-    var stream;
-
-    if (!object) {
+    var hit = this.cache.get(key);
+    if (!hit) {
         return undefined;
     }
-    else if (object.status === STATUS_PENDING) {
+
+    if (hit.status === STATUS_PENDING) {
         return this.returnPendingStream(key);
     }
-    else {
-        stream = new ReadStream();
-        stream.setBuffer(object.data);
-        return stream;
-    }
+
+    var stream = new ReadStream();
+    stream.setBuffer(hit.data);
+    return stream;
 };
 
 StreamingCache.prototype.set = function (key) {
-    var self = this;
     utils.ensureDefined(key, 'Key');
 
+    var self = this;
     var metadata = self.getMetadata(key) || {};
 
     self.cache.set(key, { status: STATUS_PENDING, metadata: metadata });
@@ -144,25 +142,23 @@ StreamingCache.prototype.set = function (key) {
 
     var chunks = new LinkedList();
     var stream = new Streams.Duplex()
+
     stream._read = function () {
-        if (!chunks) {
-            this.needRead = true;
-            return;
-        }
         var chunk = chunks.shift();
-        if (!chunk) {
-            this.needRead = true;
-        }
-        else {
+        if (chunk) {
             this.push(chunk);
             this.needRead = false;
+        } else {
+            this.needRead = true;
         }
-    }
+    };
+
     stream._write = function (chunk, encoding, next) {
         self.emitters[key]._buffer.push(chunk);
         self.emitters[key].emit('data', chunk);
         if (this.needRead) {
             this.push(chunk);
+            this.needRead = false;
         }
         else {
             chunks.push(chunk);
@@ -187,20 +183,22 @@ StreamingCache.prototype.set = function (key) {
         else {
             chunks.push(null);
         }
-        var c = self.cache.get(key);
-        chunks = null;
-        if (!c) {
-            self.emitters[key].emit('end', Buffer.concat(self.emitters[key]._buffer));
-            delete self.emitters[key];
-            return;
+
+        var hit = self.cache.get(key);
+        if (hit) {
+            var buffer = Buffer.concat(self.emitters[key]._buffer);
+            hit.metadata = hit.metadata || {};
+            utils.assign(hit.metadata, {
+                length: buffer.toString().length,
+                byteLength: buffer.byteLength
+            });
+            utils.assign(hit, {
+                data: buffer,
+                status: STATUS_DONE
+            });
+            self.cache.set(key, hit);
         }
-        var buffer = Buffer.concat(self.emitters[key]._buffer);
-        c.metadata = c.metadata || {};
-        c.metadata.length = buffer.toString().length;
-        c.metadata.byteLength = buffer.byteLength;
-        c.data = buffer;
-        c.status = STATUS_DONE;
-        self.cache.set(key, c);
+
         self.emitters[key].emit('end', Buffer.concat(self.emitters[key]._buffer));
         delete self.emitters[key];
     });
@@ -209,7 +207,6 @@ StreamingCache.prototype.set = function (key) {
 
 StreamingCache.prototype.reset = function () {
     this.cache.reset();
-    this.emitters = {};
 };
 
 module.exports = StreamingCache;
