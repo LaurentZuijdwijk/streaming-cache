@@ -1,0 +1,11 @@
+# Git configuration
+.gitignore
+
+# JSHint configuration
+.jshintrc
+
+# npm configuration
+.npmignore
+
+# Circle CI configuration
+circle.yml

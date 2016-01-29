@@ -77,7 +77,7 @@ describe('streaming cache', function () {
         expect(function () { cache.getData('c') }).toThrow();
         expect(cache.getData('c', function (err, data) {
             expect(data).toEqual(undefined);
-            expect(err).toEqual('cache miss');
+            expect(err).toEqual('Cache miss');
             done();
         }));
     });

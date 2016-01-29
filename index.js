@@ -1,194 +1,164 @@
 'use strict';
 
-var LRU = require('lru-cache') ;
-var EventEmitter = require('events').EventEmitter;
 var STATUS_PENDING = 1;
 var STATUS_DONE = 2;
 
-var ReadStream = require('./lib/readStream');
-var Streams = require('stream');
-
+var LRU = require('lru-cache');
+var EventEmitter = require('events').EventEmitter;
 var LinkedList = require('linkedlist');
-var emitters = {};
+var Streams = require('stream');
+var ReadStream = require('./lib/readStream');
+var assign = require('lodash.assign');
+var utils = require('./lib/utils');
 
-var lruOptions = {
-    length: function (cachedObject) {
-        if (cachedObject.data) {
-            return cachedObject.data.length;
-        }
-        else {
-            return 0;
-        }
-    }
+var DEFAULT_LENGTH = function (value) {
+    return value.data ? value.data.length : 1;
 };
 
 var StreamingCache = function StreamingCache(options) {
-    options = options || {};
-    options.length = lruOptions.length;
-    this.cache = LRU(options);
-    Object.defineProperty(this, 'length', {
-        get: function () {
-            return this.cache.length;
+    this.cache = LRU(assign({ length: DEFAULT_LENGTH }, options));
+    this.emitters = {};
+
+    Object.defineProperties(this, {
+        'length': {
+            get: function () {
+                return this.cache.length;
+            }
+        },
+        'itemCount': {
+            get: function () {
+                return this.cache.itemCount;
+            }
         }
     });
-    Object.defineProperty(this, 'itemCount', {
-        get: function () {
-            return this.cache.itemCount;
-        }
-    });
-}
+};
 
 StreamingCache.prototype.setData = function (key, data) {
-    var self = this;
-    checkKey(key);
+    utils.ensureDefined(key, 'Key');
 
-    var c = {};
-    c.data = data;
-    c.metadata = self.getMetadata(key) || {};
+    this.cache.set(key, {
+        data: data,
+        metadata: this.getMetadata(key) || {},
+        status: STATUS_DONE
+    });
 
-    c.status = STATUS_DONE;
-    self.cache.set(key, c);
     return this;
-}
+};
 
-StreamingCache.prototype.getData = function (key, cb) {
+StreamingCache.prototype.getData = function (key, callback) {
+    utils.ensureDefined(key, 'Key');
+    utils.ensureDefined(callback, 'Callback');
+
     var self = this;
-    checkKey(key);
+    var hit = self.cache.get(key);
 
-    if (!cb) {
-        throw(new Error('callback expected'));
+    if (!hit) {
+        return callback('Cache miss');
     }
-    var object = this.cache.get(key);
-    if (!object) {
-        cb('cache miss');
+
+    if (hit.status === STATUS_DONE) {
+        return callback(null, hit.data);
     }
-    else if (object.status === STATUS_PENDING) {
-        emitters[key].on('error', function (err) {
-            cb(err);
-        })
-        emitters[key].on('end', function (data) {
-            cb(null, self.cache.get(key).data);
-        })
-    }
-    else {
-        cb(null, object.data);
-        return;
-    }
-}
+
+    self.emitters[key].on('error', function (error) {
+        callback(error);
+    })
+
+    self.emitters[key].on('end', function (data) {
+        callback(null, self.cache.get(key).data);
+    })
+};
 
 StreamingCache.prototype.setMetadata = function (key, metadata) {
-    checkKey(key);
+    utils.ensureDefined(key, 'Key');
 
-    var data = this.cache.get(key);
-    if (!data) {
-        data = {};
-    }
-    data.metadata = metadata;
+    var data = assign({}, this.cache.get(key), { metadata: metadata })
     this.cache.set(key, data);
 };
 
 StreamingCache.prototype.getMetadata = function (key) {
-    checkKey(key);
+    utils.ensureDefined(key, 'Key');
 
-    var data = this.cache.get(key);
-    if (data && data.metadata) {
-        return data.metadata;
-    }
-    return null;
+    var hit = this.cache.get(key);
+    return hit && hit.metadata ? hit.metadata : null;
 };
 
 StreamingCache.prototype.exists = function (key) {
-    checkKey(key);
-    var object = this.cache.get(key);
-    if (object && object.status) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    utils.ensureDefined(key, 'Key');
+
+    var hit = this.cache.get(key);
+    return !!(hit && hit.status);
 };
 
 StreamingCache.prototype.del = function (key) {
     this.cache.del(key);
 };
-function checkKey(key) {
-    if (!key) {
-        throw(new Error('Key expected'));
-    }
-}
 
 StreamingCache.prototype.returnPendingStream = function (key) {
+    var self = this;
     var stream = new ReadStream();
-    emitters[key].on('error', function (error) {
+
+    self.emitters[key].on('error', function (error) {
         stream.emit('error', error);
     });
-    emitters[key].on('end', function (data) {
+    self.emitters[key].on('end', function (data) {
         stream.setBuffer(data);
     });
-
-    stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
-
-    emitters[key].on('data', function (chunk) {
-        stream.updateBuffer(Buffer.concat(emitters[key]._buffer));
+    self.emitters[key].on('data', function (chunk) {
+        stream.updateBuffer(Buffer.concat(self.emitters[key]._buffer));
     });
+
+    stream.updateBuffer(Buffer.concat(self.emitters[key]._buffer));
     return stream;
-}
-
-StreamingCache.prototype.get = function (key) {
-    checkKey(key);
-
-    var object = this.cache.get(key);
-    var stream;
-
-    if (!object) {
-        return undefined;
-    }
-    else if (object.status === STATUS_PENDING) {
-        return this.returnPendingStream(key);
-    }
-    else {
-        stream = new ReadStream();
-        stream.setBuffer(object.data);
-        return stream;
-    }
 };
 
-StreamingCache.prototype.reset = function () {
-    this.cache.reset();
+StreamingCache.prototype.get = function (key) {
+    utils.ensureDefined(key, 'Key');
+
+    var hit = this.cache.get(key);
+    if (!hit) {
+        return undefined;
+    }
+
+    if (hit.status === STATUS_PENDING) {
+        return this.returnPendingStream(key);
+    }
+
+    var stream = new ReadStream();
+    stream.setBuffer(hit.data);
+    return stream;
 };
 
 StreamingCache.prototype.set = function (key) {
-    var self = this;
-    checkKey(key);
+    utils.ensureDefined(key, 'Key');
 
+    var self = this;
     var metadata = self.getMetadata(key) || {};
 
-    self.cache.set(key, { status : STATUS_PENDING, metadata: metadata});
-    emitters[key] = new EventEmitter();
-    emitters[key].setMaxListeners(250);
-    emitters[key]._buffer = [];
+    self.cache.set(key, { status: STATUS_PENDING, metadata: metadata });
+    self.emitters[key] = new EventEmitter();
+    self.emitters[key].setMaxListeners(250);
+    self.emitters[key]._buffer = [];
 
     var chunks = new LinkedList();
     var stream = new Streams.Duplex()
+
     stream._read = function () {
-        if(!chunks){
-            this.needRead = true;
-            return;
-        }
         var chunk = chunks.shift();
-        if (!chunk) {
-            this.needRead = true;
-        }
-        else {
+        if (chunk) {
             this.push(chunk);
             this.needRead = false;
+        } else {
+            this.needRead = true;
         }
-    }
-    stream._write =  function (chunk, encoding, next) {
-        emitters[key]._buffer.push(chunk);
-        emitters[key].emit('data', chunk);
+    };
+
+    stream._write = function (chunk, encoding, next) {
+        self.emitters[key]._buffer.push(chunk);
+        self.emitters[key].emit('data', chunk);
         if (this.needRead) {
             this.push(chunk);
+            this.needRead = false;
         }
         else {
             chunks.push(chunk);
@@ -198,13 +168,14 @@ StreamingCache.prototype.set = function (key) {
 
     stream.on('error', function (err) {
         self.cache.del(key);
-        if (emitters[key] && emitters[key]._events.error) {
-            emitters[key].emit('error', err);
+        if (self.emitters[key] && self.emitters[key]._events.error) {
+            self.emitters[key].emit('error', err);
         }
         stream.removeAllListeners();
-        emitters[key].removeAllListeners();
-        delete emitters[key];
+        self.emitters[key].removeAllListeners();
+        delete self.emitters[key];
     });
+
     stream.on('finish', function () {
         if (this.needRead) {
             this.push(null);
@@ -212,24 +183,30 @@ StreamingCache.prototype.set = function (key) {
         else {
             chunks.push(null);
         }
-        var c = self.cache.get(key);
-        chunks = null;
-        if (!c) {
-            emitters[key].emit('end', Buffer.concat(emitters[key]._buffer));
-            delete emitters[key];
-            return;
+
+        var hit = self.cache.get(key);
+        if (hit) {
+            var buffer = Buffer.concat(self.emitters[key]._buffer);
+            hit.metadata = hit.metadata || {};
+            utils.assign(hit.metadata, {
+                length: buffer.toString().length,
+                byteLength: buffer.byteLength
+            });
+            utils.assign(hit, {
+                data: buffer,
+                status: STATUS_DONE
+            });
+            self.cache.set(key, hit);
         }
-        var buffer = Buffer.concat(emitters[key]._buffer);
-        c.metadata = c.metadata || {};
-        c.metadata.length = buffer.toString().length;
-        c.metadata.byteLength = buffer.byteLength;
-        c.data = buffer;
-        c.status = STATUS_DONE;
-        self.cache.set(key, c);
-        emitters[key].emit('end', Buffer.concat(emitters[key]._buffer));
-        delete emitters[key];
+
+        self.emitters[key].emit('end', Buffer.concat(self.emitters[key]._buffer));
+        delete self.emitters[key];
     });
     return stream;
+};
+
+StreamingCache.prototype.reset = function () {
+    this.cache.reset();
 };
 
 module.exports = StreamingCache;

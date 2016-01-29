@@ -1,21 +1,21 @@
 'use strict';
+
+var fs = require('fs');
+
 var Cache = require('../index.js');
 var cache = new Cache({max: 5, maxAge: 15});
-var fs = require('fs');
-var cnt = 0;
-var s = cache.set('a');
+var stream = cache.set('a');
+
+var counter = 0;
 var intervalId = setInterval(function () {
-    if (cnt >= 50) {
+    if (counter >= 50) {
         clearInterval(intervalId);
-        s.end();
+        stream.end();
     } else {
-        s.write(cnt + ' hello\n');
-        cnt++;
+        stream.write(counter + ' hello\n');
+        counter++;
     }
 }, 100);
 
-s.pipe(process.stdout);
+stream.pipe(process.stdout);
 cache.get('a').pipe(process.stdout);
-
-
-    
