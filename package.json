@@ -1,6 +1,6 @@
 {
   "name": "streaming-cache",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Cache and replay NodeJS streams",
   "main": "index.js",
   "scripts": {
