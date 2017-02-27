@@ -86,8 +86,8 @@ StreamingCache.prototype.getMetadata = function (key) {
 StreamingCache.prototype.exists = function (key) {
     utils.ensureDefined(key, 'Key');
 
-    var hit = this.cache.get(key);
-    return !!(hit && hit.status);
+    var hit = this.cache.has(key);
+    return hit;
 };
 
 StreamingCache.prototype.del = function (key) {
@@ -142,15 +142,17 @@ StreamingCache.prototype.set = function (key) {
 
     var chunks = new LinkedList();
     var stream = new Streams.Duplex()
+	 stream.needRead = 0;
 
-    stream._read = function () {
-        var chunk = chunks.shift();
-        if (chunk) {
-            this.push(chunk);
-            this.needRead = false;
-        } else {
-            this.needRead = true;
-        }
+	 stream._read = function () {
+		if(chunks.length){
+			var chunk = chunks.shift();
+			this.push(chunk);
+			this.needRead =  this.needRead-1;
+		}
+		else{
+			this.needRead = this.needRead+1;
+		}
     };
 
     stream._write = function (chunk, encoding, next) {
@@ -158,15 +160,16 @@ StreamingCache.prototype.set = function (key) {
         self.emitters[key].emit('data', chunk);
         if (this.needRead) {
             this.push(chunk);
-            this.needRead = false;
+            this.needRead =  this.needRead-1;
         }
         else {
             chunks.push(chunk);
         }
-        next(null, chunk);
+        next();
     }
 
     stream.on('error', function (err) {
+		 console.log('stream errror')
         self.cache.del(key);
         if (self.emitters[key] && self.emitters[key]._events.error) {
             self.emitters[key].emit('error', err);
@@ -179,9 +182,9 @@ StreamingCache.prototype.set = function (key) {
     stream.on('finish', function () {
         if (this.needRead) {
             this.push(null);
-        }
+       }
         else {
-            chunks.push(null);
+			  chunks.push(null);
         }
 
         var hit = self.cache.get(key);
