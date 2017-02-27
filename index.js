@@ -8,6 +8,8 @@ var EventEmitter = require('events').EventEmitter;
 var LinkedList = require('linkedlist');
 var Streams = require('stream');
 var ReadStream = require('./lib/readStream');
+var BufferingDuplexStream = require('./lib/BufferingDuplexStream');
+
 var assign = require('lodash.assign');
 var utils = require('./lib/utils');
 
@@ -62,17 +64,16 @@ StreamingCache.prototype.getData = function (key, callback) {
 
     self.emitters[key].on('error', function (error) {
         callback(error);
-    })
+    });
 
     self.emitters[key].on('end', function (data) {
         callback(null, self.cache.get(key).data);
-    })
+    });
 };
 
 StreamingCache.prototype.setMetadata = function (key, metadata) {
     utils.ensureDefined(key, 'Key');
-
-    var data = assign({}, this.cache.get(key), { metadata: metadata })
+    var data = assign({}, this.cache.get(key), { metadata: metadata });
     this.cache.set(key, data);
 };
 
@@ -141,32 +142,13 @@ StreamingCache.prototype.set = function (key) {
     self.emitters[key]._buffer = [];
 
     var chunks = new LinkedList();
-    var stream = new Streams.Duplex()
-	 stream.unfullfilledReadCount = 0;
+    var stream = new BufferingDuplexStream();
 
-	 stream._read = function () {
-		if(chunks.length){
-			var chunk = chunks.shift();
-			this.push(chunk);
-			this.unfullfilledReadCount =  this.unfullfilledReadCount - 1;
-		}
-		else{
-			this.unfullfilledReadCount = this.unfullfilledReadCount + 1;
-		}
-    };
-
-    stream._write = function (chunk, encoding, next) {
+    stream.on('data', function(chunk){
         self.emitters[key]._buffer.push(chunk);
         self.emitters[key].emit('data', chunk);
-        if (this.unfullfilledReadCount) {
-            this.push(chunk);
-            this.unfullfilledReadCount =  this.unfullfilledReadCount - 1;
-        }
-        else {
-            chunks.push(chunk);
-        }
-        next();
-    }
+    });
+
 
     stream.on('error', function (err) {
         self.cache.del(key);
@@ -179,12 +161,6 @@ StreamingCache.prototype.set = function (key) {
     });
 
     stream.on('finish', function () {
-        if (this.unfullfilledReadCount) {
-            this.push(null);
-       }
-        else {
-			  chunks.push(null);
-        }
 
         var hit = self.cache.get(key);
         if (hit) {
@@ -200,7 +176,6 @@ StreamingCache.prototype.set = function (key) {
             });
             self.cache.set(key, hit);
         }
-
         self.emitters[key].emit('end', Buffer.concat(self.emitters[key]._buffer));
         delete self.emitters[key];
     });

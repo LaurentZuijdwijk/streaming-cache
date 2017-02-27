@@ -1,4 +1,6 @@
 /* jshint jasmine: true */
+/*global describe beforeEach it expect jasmine*/
+
 'use strict';
 
 var StreamingCache = require('../index');
@@ -8,9 +10,9 @@ var cache = new StreamingCache();
 describe('streaming cache', function () {
     var s;
     beforeEach(function () {
-        cache = new StreamingCache()
+        cache = new StreamingCache();
         s = cache.set('a');
-    })
+    });
 
     it('cache.set needs to be called with a key', function () {
         expect(function () {cache.set();}).toThrow('Key expected');
@@ -22,7 +24,7 @@ describe('streaming cache', function () {
         s.write('a');
         s.write('b');
         cache.getData('a', function (err, data) {
-            expect(data.toString()).toEqual('ab')
+            expect(data.toString()).toEqual('ab');
             done();
         });
         s.end(null);
@@ -37,9 +39,9 @@ describe('streaming cache', function () {
         s.write('ggg');
         var r = cache.get('a');
         r.on('data', function (chunk) {
-            expect(chunk.toString()).toEqual('ggg')
-            done()
-        })
+            expect(chunk.toString()).toEqual('ggg');
+            done();
+        });
         s.end();
 
         expect(r).toEqual(jasmine.any(require('../lib/readStream')));
@@ -63,7 +65,7 @@ describe('streaming cache', function () {
             expect(endSpy.calls.length).toEqual(1);
 
             done();
-        }, 200)
+        }, 200);
     });
     it('should handle sync setData', function () {
         expect(cache.setData).toThrow();
@@ -74,7 +76,7 @@ describe('streaming cache', function () {
 
     it('should handle getData when data is missing', function (done) {
         expect(cache.getData).toThrow();
-        expect(function () { cache.getData('c') }).toThrow();
+        expect(function () { cache.getData('c'); }).toThrow();
         expect(cache.getData('c', function (err, data) {
             expect(data).toEqual(undefined);
             expect(err).toEqual('Cache miss');
@@ -102,7 +104,7 @@ describe('streaming cache', function () {
             expect(cache.getMetadata('abc').a).toEqual('b');
             expect(cache.getMetadata('abc').length).toEqual(2);
             done();
-        }, 10)
+        }, 10);
     });
     it('should handle getmetadata', function () {
         cache.cache.set('abc', {data: 1, metaData: 'bbb'});
@@ -141,17 +143,18 @@ describe('streaming cache', function () {
 describe('streaming cache short timeout', function () {
     var s;
     beforeEach(function () {
-        cache = new StreamingCache({maxAge: 100})
+        cache = new StreamingCache({maxAge: 100});
         s = cache.set('b');
     });
     it('Writing to stream should set data', function (done) {
         s.write('a');
         s.write('b');
         s.end(null);
+		  expect(s.read().toString() + s.read().toString()).toEqual('ab');
         setTimeout(function () {
-            expect(s.read().toString() + s.read().toString()).toEqual('ab')
+			  expect(s.read() + s.read()).toEqual(0);
             cache.getData('b', function (err, data) {
-                expect(data.toString()).toEqual(null)
+                expect(data).toEqual(null);
                 done();
             });
         }, 130);
