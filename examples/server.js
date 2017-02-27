@@ -1,50 +1,33 @@
+/**
 
-var http = require('http');
+In this example we create a simple server that serves the first file from disk and subsequent
+requests from cache
+
+**/
+
+const http = require('http');
 const PORT = 8080;
 
-var fs = require('fs');
-var Cache = require('../index.js');
-var cache = new Cache();
+const fs = require('fs');
+const Cache = require('../index.js');
+let cache = new Cache();
 
-function xhandleRequest(request, response) {
-    var _cache = cache.get('a');
-    var meta;
-    if (_cache) {
-        // meta = cache.getMetadata('a');
-        // if (meta && meta.length) {
-        //     response.setHeader('Content-Length', meta.length)
-        //     response.setHeader('Content-Type', 'image/jpeg');
-        // }
-        _cache.pipe(response);
-    }
-    else {
-        var readstream = fs.createReadStream('./stream.jpg');
-        readstream.pipe(cache.set('a')).pipe(response)
-        // fs.readFile('./stream.jpg', function (err, data) {
-        //     //             cache.setData('a', data);
-        //     response.end(data)
-    }
-}
+const server = http.createServer(handleRequest);
 
-//Create a server
-var server = http.createServer(handleRequest);
-
-//Lets start our server
 server.listen(PORT, function () {
-    //Callback triggered when server is successfully listening. Hurray!
-    console.log('Server listening on: http://localhost:%s', PORT);
+	console.log('Server listening on: http://localhost:%s', PORT);
 });
 
 function handleRequest(request, response) {
-    cache.getData('a', function (err, data) {
-        if (data) {
-            response.end(data);
-        }
-        else {
-            fs.readFile('./stream.jpg', function (err, data) {
-                cache.setData('a', data);
-                response.end(data)
-            });
-        }
-    });
+	if (cache.exists('stream.jpg')) {
+		response.setHeader('From-Cache', 'true');
+		cache.get('stream.jpg').pipe(response);
+	}
+	else {
+		response.setHeader('From-Cache', 'false');
+
+		fs.createReadStream('./stream.jpg')
+		.pipe(cache.set('stream.jpg'))
+		.pipe(response);
+	}
 }
