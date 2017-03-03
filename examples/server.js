@@ -15,19 +15,19 @@ let cache = new Cache();
 const server = http.createServer(handleRequest);
 
 server.listen(PORT, function () {
-	console.log('Server listening on: http://localhost:%s', PORT);
+    console.log('Server listening on: http://localhost:%s', PORT);
 });
 
 function handleRequest(request, response) {
-	if (cache.exists('stream.jpg')) {
-		response.setHeader('From-Cache', 'true');
-		cache.get('stream.jpg').pipe(response);
-	}
-	else {
-		response.setHeader('From-Cache', 'false');
+    if (cache.exists('stream.jpg')) {
+        response.setHeader('From-Cache', 'true');
+        cache.get('stream.jpg').pipe(response);
+    }
+    else {
+        response.setHeader('From-Cache', 'false');
 
-		fs.createReadStream('./stream.jpg')
-		.pipe(cache.set('stream.jpg'))
-		.pipe(response);
-	}
+        fs.createReadStream('./stream.jpg')
+        .pipe(cache.set('stream.jpg'))
+        .pipe(response);
+    }
 }

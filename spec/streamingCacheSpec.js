@@ -3,10 +3,13 @@
 
 var StreamingCache = require('../index');
 var Duplex = require('stream').Duplex;
+var Writable = require('stream').Writable;
+
 
 var cache = new StreamingCache();
 describe('streaming cache', function () {
     var s;
+
     beforeEach(function () {
         cache = new StreamingCache()
         s = cache.set('a');
@@ -15,9 +18,11 @@ describe('streaming cache', function () {
     it('cache.set needs to be called with a key', function () {
         expect(function () {cache.set();}).toThrow('Key expected');
     });
+
     it('cache.set should return a stream', function () {
         expect(s).toEqual(jasmine.any(Duplex));
     });
+
     it('Writing to stream should set data', function (done) {
         s.write('a');
         s.write('b');
@@ -26,6 +31,29 @@ describe('streaming cache', function () {
             done();
         });
         s.end(null);
+    });
+
+    it('reading from a duplex stream should return all data', function(done){
+        var res = '';
+        var stream = new Writable({
+            write(chunk, encoding, callback) {
+                res += chunk;
+                callback();
+            }
+        });
+        stream.on('finish', function(){
+            expect(res).toEqual('abc');
+            done();
+        })
+
+        var cacheStream = s;
+        cacheStream.pipe(stream);
+        cacheStream.write('a');
+        cacheStream._read();
+        cacheStream._read();
+        cacheStream.write('b');
+        cacheStream.write('c');
+        cacheStream.end();
     });
 
     it('getting stream should return readstream', function () {
@@ -44,6 +72,7 @@ describe('streaming cache', function () {
 
         expect(r).toEqual(jasmine.any(require('../lib/readStream')));
     });
+
     it('should be written to and readable when set is pending', function (done) {
         var dataSpy = jasmine.createSpy();
         var endSpy = jasmine.createSpy();
@@ -65,6 +94,7 @@ describe('streaming cache', function () {
             done();
         }, 200)
     });
+
     it('should handle sync setData', function () {
         expect(cache.setData).toThrow();
         cache.setData('b', new Buffer(100));
@@ -104,6 +134,7 @@ describe('streaming cache', function () {
             done();
         }, 10)
     });
+
     it('should handle getmetadata', function () {
         cache.cache.set('abc', {data: 1, metaData: 'bbb'});
         expect(cache.getMetadata).toThrow();
@@ -140,10 +171,12 @@ describe('streaming cache', function () {
 
 describe('streaming cache short timeout', function () {
     var s;
+
     beforeEach(function () {
         cache = new StreamingCache({maxAge: 100})
         s = cache.set('b');
     });
+
     it('Writing to stream should set data', function (done) {
         s.write('a');
         s.write('b');
@@ -151,7 +184,7 @@ describe('streaming cache short timeout', function () {
         setTimeout(function () {
             expect(s.read().toString() + s.read().toString()).toEqual('ab')
             cache.getData('b', function (err, data) {
-                expect(data.toString()).toEqual(null)
+                expect(data).toEqual(null)
                 done();
             });
         }, 130);
