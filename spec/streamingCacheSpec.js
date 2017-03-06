@@ -48,9 +48,10 @@ describe('streaming cache', function () {
 
         var cacheStream = s;
         cacheStream.pipe(stream);
+        cacheStream._read();
+        cacheStream._read();
         cacheStream.write('a');
-        cacheStream._read();
-        cacheStream._read();
+
         cacheStream.write('b');
         cacheStream.write('c');
         cacheStream.end();

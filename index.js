@@ -145,10 +145,11 @@ StreamingCache.prototype.set = function (key) {
     stream.unfullfilledReadCount = 0;
 
     stream._read = function () {
+
         if(chunks.length){
             var chunk = chunks.shift();
             this.push(chunk);
-            this.unfullfilledReadCount =  this.unfullfilledReadCount - 1;
+            this.unfullfilledReadCount =  (this.unfullfilledReadCount > 0) ? this.unfullfilledReadCount - 1 : this.unfullfilledReadCount;
         }
         else{
             this.unfullfilledReadCount = this.unfullfilledReadCount + 1;
@@ -158,13 +159,10 @@ StreamingCache.prototype.set = function (key) {
     stream._write = function (chunk, encoding, next) {
         self.emitters[key]._buffer.push(chunk);
         self.emitters[key].emit('data', chunk);
-        if (this.unfullfilledReadCount) {
-            this.push(chunk);
+        if (this.unfullfilledReadCount ) {
             this.unfullfilledReadCount =  this.unfullfilledReadCount - 1;
         }
-        else {
-            chunks.push(chunk);
-        }
+        chunks.push(chunk);
         next();
     }
 
