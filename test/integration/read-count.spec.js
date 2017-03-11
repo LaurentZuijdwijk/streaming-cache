@@ -35,7 +35,7 @@ describe('/', function () {
 				response.setHeader('From-Cache', 'false');
 				fs.createReadStream(fileName)
 					.pipe(cache.set(fileName))
-					.pipe(response)
+					.pipe(response);
 		}
 	}
 
@@ -46,6 +46,7 @@ describe('/', function () {
 			.expect(200)
 			.end(function(err, res) {
 				if (err) throw err;
+				done();
 			});
 		});
 
@@ -56,6 +57,7 @@ describe('/', function () {
 			.expect(200)
 			.end(function(err, res) {
 				if (err) throw err;
+				done();
 			});
 		});
 });
