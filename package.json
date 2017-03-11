@@ -4,7 +4,7 @@
   "description": "Cache and replay NodeJS streams",
   "main": "index.js",
   "scripts": {
-    "test": "istanbul  cover ./node_modules/jasmine-node/bin/jasmine-node ./spec --captureExceptions --verbose"
+    "test": "istanbul cover ./node_modules/jasmine-node/bin/jasmine-node ./spec --captureExceptions --verbose && mocha test/integration/*.spec.js"
   },
   "keywords": [
     "cache",
@@ -17,10 +17,12 @@
   "dependencies": {
     "linkedlist": "^1.0.1",
     "lodash.assign": "^4.0.1",
-    "lru-cache": "^2.7.0"
+    "lru-cache": "^2.7.0",
+    "mocha": "^3.2.0"
   },
   "devDependencies": {
     "istanbul": "^0.3.22",
-    "jasmine-node": "^1.14.5"
+    "jasmine-node": "^1.14.5",
+    "supertest": "^3.0.0"
   }
 }
