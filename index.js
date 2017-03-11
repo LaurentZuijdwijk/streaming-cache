@@ -148,7 +148,7 @@ StreamingCache.prototype.set = function (key) {
 		if(chunks.length){
 			var chunk = chunks.shift();
 			this.push(chunk);
-			this.unfullfilledReadCount = this.unfullfilledReadCount - 1;
+			this.unfullfilledReadCount =  (this.unfullfilledReadCount > 0) ? this.unfullfilledReadCount - 1 : this.unfullfilledReadCount;
 		}
 		else{
 			this.unfullfilledReadCount = this.unfullfilledReadCount + 1;
