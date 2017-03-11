@@ -5,7 +5,7 @@ describe('/', function () {
 	const request = require('supertest');
 	const http = require('http');
 	const PORT = 8080;
-	const fileName = './fixtures/text-file-large.txt';
+	const fileName = 'test/fixtures/text-file-large.txt';
 	const fs = require('fs');
 	const Cache = require('../../index.js');
 	var server;
