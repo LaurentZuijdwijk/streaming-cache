@@ -5,8 +5,9 @@ describe('/', function () {
 	var request = require('supertest');
 	var http = require('http');
 	var PORT = 58080;
-	var fileName = 'test/integration/fixtures/text-file-large.txt';
 	var fs = require('fs');
+	var fileName = 'test/integration/fixtures/text-file-small.txt';
+	var fileContent = String(fs.readFileSync(fileName));
 	var Cache = require('../../index.js');
 	var server;
 	var cache = new Cache();
@@ -44,6 +45,7 @@ describe('/', function () {
 			.get('/')
 			.expect('From-Cache', 'false')
 			.expect(200)
+			.expect(fileContent)
 			.end(function(err, res) {
 				if (err) throw err;
 				done();
@@ -55,6 +57,7 @@ describe('/', function () {
 			.get('/')
 			.expect('From-Cache', 'true')
 			.expect(200)
+			.expect(fileContent)
 			.end(function(err, res) {
 				if (err) throw err;
 				done();
