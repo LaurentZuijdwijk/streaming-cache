@@ -141,28 +141,30 @@ StreamingCache.prototype.set = function (key) {
     self.emitters[key]._buffer = [];
 
     var chunks = new LinkedList();
-    var stream = new Streams.Duplex()
-    stream.unfullfilledReadCount = 0;
+    var stream = new Streams.Duplex();
+	stream.unfullfilledReadCount = 0;
 
-    stream._read = function () {
-
-        if(chunks.length){
-            var chunk = chunks.shift();
-            this.push(chunk);
-            this.unfullfilledReadCount =  (this.unfullfilledReadCount > 0) ? this.unfullfilledReadCount - 1 : this.unfullfilledReadCount;
-        }
-        else{
-            this.unfullfilledReadCount = this.unfullfilledReadCount + 1;
-        }
+	stream._read = function () {
+		if(chunks.length){
+			var chunk = chunks.shift();
+			this.push(chunk);
+			this.unfullfilledReadCount = this.unfullfilledReadCount - 1;
+		}
+		else{
+			this.unfullfilledReadCount = this.unfullfilledReadCount + 1;
+		}
     };
 
     stream._write = function (chunk, encoding, next) {
         self.emitters[key]._buffer.push(chunk);
         self.emitters[key].emit('data', chunk);
-        if (this.unfullfilledReadCount ) {
+        if (this.unfullfilledReadCount) {
+            this.push(chunk);
             this.unfullfilledReadCount =  this.unfullfilledReadCount - 1;
         }
-        chunks.push(chunk);
+        else {
+            chunks.push(chunk);
+        }
         next();
     }
 
@@ -179,9 +181,9 @@ StreamingCache.prototype.set = function (key) {
     stream.on('finish', function () {
         if (this.unfullfilledReadCount) {
             this.push(null);
-        }
+       }
         else {
-            chunks.push(null);
+			  chunks.push(null);
         }
 
         var hit = self.cache.get(key);

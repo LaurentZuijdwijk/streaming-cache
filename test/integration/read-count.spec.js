@@ -5,7 +5,7 @@ describe('/', function () {
 	var request = require('supertest');
 	var http = require('http');
 	var PORT = 58080;
-	var fileName = 'test/fixtures/text-file-large.txt';
+	var fileName = 'test/integration/fixtures/text-file-large.txt';
 	var fs = require('fs');
 	var Cache = require('../../index.js');
 	var server;
@@ -34,7 +34,7 @@ describe('/', function () {
 		} else {
 				response.setHeader('From-Cache', 'false');
 				fs.createReadStream(fileName)
-					.pipe(cache.set(fileName))
+					 .pipe(cache.set(fileName))
 					.pipe(response)
 		}
 	}
@@ -46,6 +46,7 @@ describe('/', function () {
 			.expect(200)
 			.end(function(err, res) {
 				if (err) throw err;
+				done()
 			});
 		});
 
@@ -56,6 +57,7 @@ describe('/', function () {
 			.expect(200)
 			.end(function(err, res) {
 				if (err) throw err;
+				done()
 			});
 		});
 });
