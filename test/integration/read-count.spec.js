@@ -2,12 +2,12 @@
 
 describe('/', function () {
 
-	const request = require('supertest');
-	const http = require('http');
-	const PORT = 8080;
-	const fileName = 'test/fixtures/text-file-large.txt';
-	const fs = require('fs');
-	const Cache = require('../../index.js');
+	var request = require('supertest');
+	var http = require('http');
+	var PORT = 58080;
+	var fileName = 'test/fixtures/text-file-large.txt';
+	var fs = require('fs');
+	var Cache = require('../../index.js');
 	var server;
 	var cache = new Cache();
 
@@ -16,7 +16,7 @@ describe('/', function () {
 		server = http.createServer(handleRequest);
 		//server.listen(PORT, done);
 		server.listen(PORT, function () {
-			console.log(`Server listening on: http://localhost:${PORT}`);
+			console.log('Integration test server running on: http://localhost:%s', PORT);
 			done();
 		});
 	});
