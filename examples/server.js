@@ -27,7 +27,6 @@ function handleRequest(request, response) {
 	}
 	else {
 		response.setHeader('From-Cache', 'false');
-
 		fs.createReadStream(FILENAME)
 		.pipe(cache.set(FILENAME))
 		.pipe(response);
