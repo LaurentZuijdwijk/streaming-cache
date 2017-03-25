@@ -7,7 +7,7 @@ Speed up your services.
 
 Cache, queue and distribute streams immediately. Streams can be replayed immediately, even if the source is not finished.
 
-Uses a fixed size LRU-cache in the background. 
+Uses a fixed size LRU-cache in the background.
 
 Usefull for caching (slow) streaming connections, such as S3 requests or complex database queries.  
 
@@ -32,14 +32,14 @@ var Cache = require('../index.js');
 var cache = new Cache();
 var fs = require('fs');
 
-var readstream = fs.createReadStream('readme.md');
-var writestream = fs.createWriteStream('test2.txt');
+var inputStream = fs.createReadStream('readme.md');
+var outputStream = fs.createWriteStream('test2.txt');
 
-readstream.pipe(cache.set('a'));
+inputStream.pipe(cache.set('myKey'));
 
 setTimeout(function(){
-  writestream2.write('written from cache\n\n');
-  cache.get('a').pipe(writestream);
+  outputStream.write('written from cache\n\n');
+  cache.get('myKey').pipe(outputStream);
  }, 200);
 
 ```
@@ -60,7 +60,7 @@ fileStream.pipe(cache.set('key')).pipe(res);
 ```
 
 
-##### get(key) => ReadableStream 
+##### get(key) => ReadableStream
 
 ```javascript
 var cached = cache.get('key');
@@ -74,11 +74,11 @@ if(cached){
 A set data synchronously to stream at a later moment
 
 #### getData
-Get data with a callback. 
+Get data with a callback.
 
 ```javascript
 cache.getData('key', function(err, data){
-	if(err){ 
+	if(err){
 	  //handle error
 	}
 	// do something with data
@@ -92,4 +92,3 @@ Get metadata
 
 #### exists(key)
 returns true or false if a key exists.
-
