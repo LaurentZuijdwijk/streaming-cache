@@ -57,4 +57,23 @@ describe('readstream spec', function () {
             done();
         }, 30);
     });
+
+    describe('with flowing stream', function () {
+        beforeEach(function () {
+            // Adding a 'data' event handler changes
+            // a stream from "paused" mode to "flowing" mode
+            readStream.on('data', () => null);
+        })
+
+        it('should be able to set a buffer', function () {
+            var len = 1;
+            expect(readStream.read(2)).toEqual(null);
+            readStream.setBuffer(new Buffer(len));
+
+            expect(readStream.complete).toBe(true);
+            expect(readStream._offset).toBe(len);
+            expect(readStream._object.length).toBe(len);
+        });
+    });
+
 });

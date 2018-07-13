@@ -156,6 +156,8 @@ StreamingCache.prototype.set = function (key) {
     };
 
     stream._write = function (chunk, encoding, next) {
+        if (!self.emitters[key]) return next(new Error("emitter already destroyed"));
+
         self.emitters[key]._buffer.push(chunk);
         self.emitters[key].emit('data', chunk);
         if (this.unfullfilledReadCount > 0) {
@@ -174,8 +176,11 @@ StreamingCache.prototype.set = function (key) {
             self.emitters[key].emit('error', err);
         }
         stream.removeAllListeners();
-        self.emitters[key].removeAllListeners();
-        delete self.emitters[key];
+        if (self.emitters[key]) {
+            self.emitters[key].removeAllListeners();
+            delete self.emitters[key];
+        }
+
     });
 
     stream.on('finish', function () {
@@ -185,6 +190,8 @@ StreamingCache.prototype.set = function (key) {
         else {
 			chunks.push(null);
         }
+
+        if (!self.emitters[key]) return;
 
         var hit = self.cache.get(key);
         if (hit) {
