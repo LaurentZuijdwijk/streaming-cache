@@ -1,6 +1,6 @@
 {
   "name": "streaming-cache",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Cache and replay NodeJS streams",
   "main": "index.js",
   "scripts": {
@@ -17,10 +17,10 @@
   "dependencies": {
     "linkedlist": "^1.0.1",
     "lodash.assign": "^4.0.1",
-    "lru-cache": "^2.7.0",
-    "mocha": "^3.2.0"
+    "lru-cache": "^2.7.0"
   },
   "devDependencies": {
+    "mocha": "^5.2.0",
     "istanbul": "^0.3.22",
     "jasmine-node": "^1.14.5",
     "supertest": "^3.0.0"
